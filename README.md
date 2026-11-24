@@ -22,7 +22,7 @@ Thay vì sử dụng hộp thoại cảnh báo truyền thống gây đứng tra
 
 ---
 
-## 🆕 Có gì mới trong phiên bản `1.0.2.0`?
+## 🆕 Thông tin bản cập nhật phiên bản `1.0.2.0`?
 
 - 🎬 **Chặn quảng cáo YouTube toàn diện như Cốc Cốc:** Chặn request quảng cáo ngay từ tầng mạng (`/pagead/`, `doubleclick.net`), lọc bỏ `adPlacements` trong dữ liệu khởi tạo trình phát và tự động bỏ qua luồng quảng cáo để video phát liền mạch từ đầu.
 - 📞 **Sửa lỗi gọi Video Call trên Facebook / Messenger:** Tự động nhận diện và miễn trừ kiểm soát pop-up trên `facebook.com` và `messenger.com`, đảm bảo tính năng gọi video (`facebook.com/messages/`) hoạt động bình thường không bị chặn cửa sổ cuộc gọi.
