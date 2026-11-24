@@ -33,9 +33,9 @@
     .header-right {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
-    .github-link {
+    .social-link {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -48,10 +48,14 @@
       transition: background 0.15s, color 0.15s, border-color 0.15s;
       text-decoration: none;
     }
-    .github-link:hover {
+    .social-link:hover {
       background: #334155;
       color: #ffffff;
       border-color: #4ade80;
+    }
+    .social-link.fb:hover {
+      border-color: #3b82f6;
+      color: #60a5fa;
     }
     .version {
       font-size: 11px;
@@ -298,10 +302,22 @@
     <div class="title">🛡️ AdBlocker by xTer-Inc</div>
     <div class="header-right">
       <a
+        href="https://www.facebook.com/richardisme.us/"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="social-link fb"
+        id="facebookBtn"
+        title="Facebook: Trần Hưng Nguyên"
+      >
+        <svg height="14" width="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z"/>
+        </svg>
+      </a>
+      <a
         href="https://github.com/xTer-Inc"
         target="_blank"
         rel="noopener noreferrer"
-        class="github-link"
+        class="social-link"
         id="githubBtn"
         title="GitHub: xTer-Inc"
       >
