@@ -10,12 +10,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const blockedListEl = document.getElementById('blockedList');
   const filterBtns = document.querySelectorAll('.tab-btn');
   const githubBtn = document.getElementById('githubBtn');
+  const facebookBtn = document.getElementById('facebookBtn');
 
   let activeTabId = null;
   let cleanHostname = '';
   let allLogs = [];
   let currentFilter = 'tab';
   let isExpanded = false;
+
+  // Mở trang Facebook trong tab mới
+  if (facebookBtn) {
+    facebookBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      chrome.tabs.create({ url: 'https://www.facebook.com/richardisme.us/' });
+    });
+  }
 
   // Mở trang GitHub trong tab mới
   if (githubBtn) {
@@ -103,7 +112,6 @@ document.addEventListener('DOMContentLoaded', () => {
             tabId: activeTabId,
             color: isEnabled ? '#16a34a' : '#64748b'
           });
-          // Tải lại tab hiện tại để áp dụng thay đổi ngay lập tức
           chrome.tabs.reload(activeTabId);
         }
       });
