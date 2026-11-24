@@ -7,7 +7,8 @@
 [![Version](https://img.shields.io/badge/Version-1.0.2.0-16a34a?style=for-the-badge)](https://github.com/xTer-Inc)
 [![Manifest](https://img.shields.io/badge/Manifest-V3-2563eb?style=for-the-badge&logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![Browser](https://img.shields.io/badge/Chrome%20%7C%20Edge%20%7C%20C%E1%BB%91c%20C%E1%BB%91c%20%7C%20Brave-Supported-f59e0b?style=for-the-badge)](#)
-[![Author](https://img.shields.io/badge/Author-xTer--Inc-0f172a?style=for-the-badge&logo=github)](https://github.com/xTer-Inc)
+[![GitHub](https://img.shields.io/badge/GitHub-xTer--Inc-0f172a?style=for-the-badge&logo=github)](https://github.com/xTer-Inc)
+[![Facebook](https://img.shields.io/badge/Facebook-richardisme.us-1877F2?style=for-the-badge&logo=facebook&logoColor=white)](https://www.facebook.com/richardisme.us/)
 
 </div>
 
@@ -40,7 +41,7 @@ Thay vì sử dụng hộp thoại cảnh báo truyền thống gây đứng tra
 - 📊 **Popup thống kê & Nhật ký chi tiết:**
   - Bộ đếm số lượng quảng cáo đã chặn theo thời gian thực hiển thị trực tiếp trên biểu tượng Extension (**Badge**).
   - Giao diện Popup tối giản tích hợp nút **Xem danh sách đã chặn** (dạng mở rộng/thu gọn) giúp tra cứu chi tiết từng URL quảng cáo, loại chặn, thời gian và tên miền nguồn mà không làm vướng giao diện trang web.
-  - Tích hợp nút truy cập nhanh trang GitHub chính thức của tác giả (**[xTer-Inc](https://github.com/xTer-Inc)**).
+  - Tích hợp nút truy cập nhanh trang **GitHub ([xTer-Inc](https://github.com/xTer-Inc))** và **Facebook ([richardisme.us](https://www.facebook.com/richardisme.us/))** của tác giả.
 
 ---
 
@@ -105,5 +106,6 @@ graph LR
 
 ## 🤝 Đóng góp & Liên hệ
 
-- **Tác giả:** [xTer-Inc](https://github.com/xTer-Inc)
+- **GitHub:** [xTer-Inc](https://github.com/xTer-Inc)
+- **Facebook:** [richardisme.us](https://www.facebook.com/richardisme.us/)
 - **Báo lỗi & Đề xuất:** Nếu bạn gặp trang web nào vẫn còn lọt quảng cáo hoặc popunder mới, hãy mở một **Issue** hoặc gửi **Pull Request** bổ sung tên miền vào `rules.json` và `inject.js` để cùng hoàn thiện bộ lọc!
