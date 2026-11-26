@@ -85,6 +85,290 @@
     );
   }
 
+  // =========================================================================
+  // PHẦN 1: HỆ THỐNG VƯỢT QUA QUÉT ADBLOCK (ANTI-ADBLOCK BYPASS ENGINE)
+  // =========================================================================
+  function initAntiAdBlockBypass() {
+    if (isExtensionDisabledForSite) return;
+
+    // 1.1. Giả lập thư viện quảng cáo đã tải thành công để đánh lừa script kiểm tra của web
+    try {
+      if (!window.adsbygoogle) {
+        window.adsbygoogle = {
+          loaded: true,
+          push: function () {
+            return 0;
+          }
+        };
+      }
+      const fakeFlags = ['canRunAds', 'isAdBlockActive', 'adblockEnabled', 'hasAdblock'];
+      for (const flag of fakeFlags) {
+        const expectedValue = flag === 'canRunAds';
+        try {
+          Object.defineProperty(window, flag, {
+            get: () => expectedValue,
+            set: () => {},
+            configurable: true
+          });
+        } catch (e) {}
+      }
+    } catch (e) {}
+
+    // 1.2. Đánh lừa kỹ thuật kiểm tra kích thước phần tử mồi nhử (Bait Element Detection)
+    const baitClasses = ['adsbox', 'ad-banner', 'ad-placeholder', 'pub_300x250', 'text-ad'];
+    function isBaitElement(el) {
+      if (!el || !el.classList) return false;
+      return baitClasses.some((cls) => el.classList.contains(cls));
+    }
+
+    const origOffsetHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetHeight');
+    const origOffsetWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'offsetWidth');
+
+    if (origOffsetHeight && origOffsetHeight.get) {
+      Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
+        configurable: true,
+        get: function () {
+          if (!isExtensionDisabledForSite && isBaitElement(this)) {
+            return 250;
+          }
+          return origOffsetHeight.get.call(this);
+        }
+      });
+    }
+
+    if (origOffsetWidth && origOffsetWidth.get) {
+      Object.defineProperty(HTMLElement.prototype, 'offsetWidth', {
+        configurable: true,
+        get: function () {
+          if (!isExtensionDisabledForSite && isBaitElement(this)) {
+            return 300;
+          }
+          return origOffsetWidth.get.call(this);
+        }
+      });
+    }
+
+    // 1.3. Giả lập phản hồi HTTP 200 OK cho các request thăm dò quảng cáo (tránh lỗi ERR_BLOCKED_BY_CLIENT)
+    const probePatterns = [
+      'pagead/js/adsbygoogle.js',
+      'doubleclick.net/pagead',
+      'googlesyndication.com/pagead',
+      'youtube.com/pagead/',
+      'youtube.com/api/stats/ads',
+      'youtube.com/ptracking'
+    ];
+
+    const origFetch = window.fetch;
+    window.fetch = async function (...args) {
+      if (!isExtensionDisabledForSite) {
+        const reqUrl = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
+        if (probePatterns.some((p) => reqUrl.includes(p))) {
+          return new Response('', {
+            status: 200,
+            statusText: 'OK',
+            headers: { 'Content-Type': 'application/javascript' }
+          });
+        }
+      }
+      return origFetch.apply(this, args);
+    };
+
+    const origXhrOpen = XMLHttpRequest.prototype.open;
+    const origXhrSend = XMLHttpRequest.prototype.send;
+
+    XMLHttpRequest.prototype.open = function (method, url, ...rest) {
+      this._xterReqUrl = typeof url === 'string' ? url : String(url || '');
+      return origXhrOpen.apply(this, [method, url, ...rest]);
+    };
+
+    XMLHttpRequest.prototype.send = function (...args) {
+      if (
+        !isExtensionDisabledForSite &&
+        this._xterReqUrl &&
+        probePatterns.some((p) => this._xterReqUrl.includes(p))
+      ) {
+        Object.defineProperty(this, 'readyState', { value: 4 });
+        Object.defineProperty(this, 'status', { value: 200 });
+        Object.defineProperty(this, 'statusText', { value: 'OK' });
+        Object.defineProperty(this, 'responseText', { value: '' });
+        setTimeout(() => {
+          if (typeof this.onreadystatechange === 'function') this.onreadystatechange();
+          if (typeof this.onload === 'function') this.onload();
+        }, 5);
+        return;
+      }
+      return origXhrSend.apply(this, args);
+    };
+  }
+
+  initAntiAdBlockBypass();
+
+  // =========================================================================
+  // PHẦN 2: CHẶN QUẢNG CÁO YOUTUBE & VÔ HIỆU HÓA CẢNH BÁO QUÉT ADBLOCK YOUTUBE
+  // =========================================================================
+  if (currentHostname.includes('youtube.com')) {
+    function cleanYouTubePayload(obj) {
+      if (!obj || typeof obj !== 'object') return obj;
+
+      const blockedKeys = [
+        'adPlacements',
+        'adSlots',
+        'playerAds',
+        'adBreakHeartbeatParams',
+        'enforcementMessageViewModel'
+      ];
+
+      for (const key of blockedKeys) {
+        if (key in obj) {
+          delete obj[key];
+        }
+      }
+
+      // Loại bỏ hộp thoại cảnh báo AdBlock trong auxiliaryUi
+      if (obj.auxiliaryUi && obj.auxiliaryUi.messageRenderers) {
+        delete obj.auxiliaryUi.messageRenderers.bkaEnforcementMessageViewModel;
+        delete obj.auxiliaryUi.messageRenderers.enforcementMessageViewModel;
+      }
+
+      return obj;
+    }
+
+    // Chặn biến khởi tạo ytInitialPlayerResponse và ytInitialData
+    ['ytInitialPlayerResponse', 'ytInitialData'].forEach((propName) => {
+      let _val = window[propName];
+      try {
+        Object.defineProperty(window, propName, {
+          configurable: true,
+          get() {
+            return _val;
+          },
+          set(newVal) {
+            _val = !isExtensionDisabledForSite ? cleanYouTubePayload(newVal) : newVal;
+          }
+        });
+      } catch (e) {}
+    });
+
+    // Can thiệp JSON.parse để làm sạch mọi payload chứa quảng cáo hoặc cảnh báo AdBlock của YouTube
+    const origJsonParse = JSON.parse;
+    JSON.parse = function (...args) {
+      const parsed = origJsonParse.apply(this, args);
+      if (!isExtensionDisabledForSite && parsed && typeof parsed === 'object') {
+        if (
+          parsed.adPlacements ||
+          parsed.adSlots ||
+          parsed.playerAds ||
+          parsed.auxiliaryUi?.messageRenderers?.bkaEnforcementMessageViewModel
+        ) {
+          cleanYouTubePayload(parsed);
+        }
+      }
+      return parsed;
+    };
+
+    // Can thiệp API /youtubei/v1/player
+    const prevFetch = window.fetch;
+    window.fetch = async function (...args) {
+      const response = await prevFetch.apply(this, args);
+      if (isExtensionDisabledForSite) return response;
+
+      try {
+        const reqUrl = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
+        if (reqUrl.includes('/youtubei/v1/player') || reqUrl.includes('/youtubei/v1/next')) {
+          const clone = response.clone();
+          const data = await clone.json();
+          if (
+            data &&
+            (data.adPlacements ||
+              data.adSlots ||
+              data.playerAds ||
+              data.auxiliaryUi?.messageRenderers?.bkaEnforcementMessageViewModel)
+          ) {
+            cleanYouTubePayload(data);
+            reportBlockedToPopup('youtubei/v1/player (Ad & Anti-AdBlock Bypass)', 'Quảng cáo YouTube');
+            return new Response(JSON.stringify(data), {
+              status: response.status,
+              statusText: response.statusText,
+              headers: response.headers
+            });
+          }
+        }
+      } catch (e) {}
+      return response;
+    };
+
+    // Giám sát trình phát video & gỡ bỏ cảnh báo AdBlock nếu xuất hiện
+    let lastLoggedYtAdTime = 0;
+    let userPausedVideo = false;
+
+    document.addEventListener(
+      'click',
+      (e) => {
+        if (e.target.closest('.ytp-play-button, video.html5-main-video')) {
+          const video = document.querySelector('video.html5-main-video');
+          if (video && !video.paused) {
+            userPausedVideo = true;
+          } else {
+            userPausedVideo = false;
+          }
+        }
+      },
+      true
+    );
+
+    setInterval(() => {
+      if (isExtensionDisabledForSite) return;
+
+      // 2.1. Xóa popup cảnh báo "Trình chặn quảng cáo vi phạm Điều khoản dịch vụ..."
+      const enforcementModal = document.querySelector(
+        'ytd-enforcement-message-view-model, tp-yt-paper-dialog:has(ytd-enforcement-message-view-model)'
+      );
+      if (enforcementModal) {
+        enforcementModal.remove();
+        document.querySelectorAll('tp-yt-iron-overlay-backdrop').forEach((b) => b.remove());
+        document.body.style.overflow = 'auto';
+
+        const video = document.querySelector('video.html5-main-video');
+        if (video && video.paused && !userPausedVideo) {
+          video.play().catch(() => {});
+        }
+        reportBlockedToPopup('YouTube Anti-AdBlock Popup', 'Bypass Cảnh báo YT');
+      }
+
+      // 2.2. Tua qua ngay lập tức nếu có luồng quảng cáo lọt vào trình phát
+      const player = document.querySelector('#movie_player');
+      const video = document.querySelector('video.html5-main-video');
+
+      if (player && (player.classList.contains('ad-showing') || player.classList.contains('ad-interrupting'))) {
+        if (video && isFinite(video.duration) && video.duration > 0) {
+          video.muted = true;
+          video.currentTime = video.duration;
+        }
+
+        const skipBtn = document.querySelector(
+          '.ytp-ad-skip-button, .ytp-ad-skip-button-modern, .ytp-skip-ad-button'
+        );
+        if (skipBtn) {
+          skipBtn.click();
+        }
+
+        const now = Date.now();
+        if (now - lastLoggedYtAdTime > 3000) {
+          lastLoggedYtAdTime = now;
+          reportBlockedToPopup('youtube.com (Video Ad)', 'Quảng cáo YouTube');
+        }
+      }
+
+      const overlayCloseBtn = document.querySelector('.ytp-ad-overlay-close-button');
+      if (overlayCloseBtn) {
+        overlayCloseBtn.click();
+      }
+    }, 150);
+  }
+
+  // =========================================================================
+  // PHẦN 3: CHẶN POPUNDER & CHUYỂN HƯỚNG NGẦM (BỎ QUA FACEBOOK/MESSENGER CALL)
+  // =========================================================================
   function isSafeUrl(urlStr) {
     try {
       const parsed = new URL(urlStr, window.location.origin);
@@ -177,110 +461,6 @@
     });
   }
 
-  // =========================================================================
-  // PHẦN 1: CHẶN QUẢNG CÁO YOUTUBE CHUẨN CỐC CỐC (KHÔNG XUẤT HIỆN QUẢNG CÁO)
-  // =========================================================================
-  if (currentHostname.includes('youtube.com')) {
-    // 1.1. Lọc sạch dữ liệu quảng cáo trong JSON cấu hình player của YouTube (ytInitialPlayerResponse)
-    function stripYouTubeAdsFromObject(obj) {
-      if (!obj || typeof obj !== 'object') return obj;
-      const adKeys = [
-        'adPlacements',
-        'adSlots',
-        'playerAds',
-        'adBreakHeartbeatParams',
-        'auxiliaryUi'
-      ];
-      for (const key of adKeys) {
-        if (key in obj) {
-          delete obj[key];
-        }
-      }
-      return obj;
-    }
-
-    // Chặn biến khởi tạo ytInitialPlayerResponse
-    let _ytInitialPlayerResponse = window.ytInitialPlayerResponse;
-    try {
-      Object.defineProperty(window, 'ytInitialPlayerResponse', {
-        configurable: true,
-        get() {
-          return _ytInitialPlayerResponse;
-        },
-        set(val) {
-          if (!isExtensionDisabledForSite) {
-            _ytInitialPlayerResponse = stripYouTubeAdsFromObject(val);
-          } else {
-            _ytInitialPlayerResponse = val;
-          }
-        }
-      });
-    } catch (e) {}
-
-    // Chặn API fetch nội bộ của YouTube (/youtubei/v1/player) để xóa adPlacements trước khi phát video
-    const origFetch = window.fetch;
-    window.fetch = async function (...args) {
-      const response = await origFetch.apply(this, args);
-      if (isExtensionDisabledForSite) return response;
-
-      try {
-        const reqUrl = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
-        if (reqUrl.includes('/youtubei/v1/player')) {
-          const clone = response.clone();
-          const data = await clone.json();
-          if (data && (data.adPlacements || data.adSlots || data.playerAds)) {
-            stripYouTubeAdsFromObject(data);
-            reportBlockedToPopup('youtubei/v1/player (Ad Slot)', 'Quảng cáo YouTube');
-            return new Response(JSON.stringify(data), {
-              status: response.status,
-              statusText: response.statusText,
-              headers: response.headers
-            });
-          }
-        }
-      } catch (e) {}
-      return response;
-    };
-
-    // 1.2. Vòng lặp kiểm tra & tua qua ngay lập tức nếu có luồng quảng cáo lọt vào trình phát
-    let lastLoggedYtAdTime = 0;
-    setInterval(() => {
-      if (isExtensionDisabledForSite) return;
-
-      const player = document.querySelector('#movie_player');
-      const video = document.querySelector('video.html5-main-video');
-
-      if (player && (player.classList.contains('ad-showing') || player.classList.contains('ad-interrupting'))) {
-        if (video && isFinite(video.duration) && video.duration > 0) {
-          video.muted = true;
-          video.currentTime = video.duration;
-        }
-
-        const skipBtn = document.querySelector(
-          '.ytp-ad-skip-button, .ytp-ad-skip-button-modern, .ytp-skip-ad-button'
-        );
-        if (skipBtn) {
-          skipBtn.click();
-        }
-
-        const now = Date.now();
-        if (now - lastLoggedYtAdTime > 3000) {
-          lastLoggedYtAdTime = now;
-          reportBlockedToPopup('youtube.com (Video Ad)', 'Quảng cáo YouTube');
-        }
-      }
-
-      // Đóng banner quảng cáo overlay đè lên video
-      const overlayCloseBtn = document.querySelector('.ytp-ad-overlay-close-button');
-      if (overlayCloseBtn) {
-        overlayCloseBtn.click();
-      }
-    }, 150);
-  }
-
-  // =========================================================================
-  // PHẦN 2: CHẶN POPUNDER & CHUYỂN HƯỚNG NGẦM (BỎ QUA FACEBOOK/MESSENGER CALL)
-  // =========================================================================
   try {
     Object.defineProperty(window, 'urlPopup', {
       get: () => '',
@@ -290,7 +470,6 @@
   } catch (e) {}
 
   window.open = function (url, target, features) {
-    // Nếu người dùng đã tắt extension trên web này hoặc đang ở ứng dụng tin cậy (Facebook/Messenger Call)
     if (isExtensionDisabledForSite || isTrustedAppContext()) {
       return originalWindowOpen.apply(this, arguments);
     }
