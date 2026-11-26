@@ -9,7 +9,7 @@ html:not(.xter-adguard-disabled) div[data-zone="middle_content"],
 html:not(.xter-adguard-disabled) footer .right ul li.hidden-tl,
 html:not(.xter-adguard-disabled) .main_content > span.text-center:first-child,
 html:not(.xter-adguard-disabled) ins.adsbygoogle,
-/* Dọn dẹp toàn bộ khung quảng cáo trên YouTube */
+/* Dọn dẹp khung quảng cáo & hộp thoại quét AdBlock trên YouTube */
 html:not(.xter-adguard-disabled) ytd-ad-slot-renderer,
 html:not(.xter-adguard-disabled) ytd-banner-promo-renderer,
 html:not(.xter-adguard-disabled) ytd-statement-banner-renderer,
@@ -17,6 +17,8 @@ html:not(.xter-adguard-disabled) ytd-in-feed-ad-layout-renderer,
 html:not(.xter-adguard-disabled) ytd-display-ad-renderer,
 html:not(.xter-adguard-disabled) ytd-promoted-sparkles-web-renderer,
 html:not(.xter-adguard-disabled) ytd-companion-slot-renderer,
+html:not(.xter-adguard-disabled) ytd-enforcement-message-view-model,
+html:not(.xter-adguard-disabled) tp-yt-paper-dialog:has(ytd-enforcement-message-view-model),
 html:not(.xter-adguard-disabled) #player-ads,
 html:not(.xter-adguard-disabled) #masthead-ad,
 html:not(.xter-adguard-disabled) .ytp-ad-module,
@@ -24,6 +26,18 @@ html:not(.xter-adguard-disabled) .ytp-ad-overlay-container {
   display: none !important;
   height: 0 !important;
   overflow: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Ẩn các phần tử mồi nhử (Bait) theo cách giữ nguyên kích thước DOM để vượt qua kiểm tra Anti-AdBlock */
+html:not(.xter-adguard-disabled) .adsbox,
+html:not(.xter-adguard-disabled) .ad-banner,
+html:not(.xter-adguard-disabled) .pub_300x250 {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
+  pointer-events: none !important;
 }
 
 /* Giao diện thanh thông báo nổi góc trên bên phải (giống Cốc Cốc) */
