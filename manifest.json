@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "AdBlocker by xTer-Inc",
-  "version": "1.0.2.0",
-  "description": "Chặn quảng cáo, banner, popunder kiểu Cốc Cốc, chặn quảng cáo YouTube và cho phép bật/tắt theo từng trang web.",
+  "version": "1.0.3.0",
+  "description": "Chặn quảng cáo, banner, popunder kiểu Cốc Cốc, chặn quảng cáo YouTube kèm công nghệ vượt qua hệ thống phát hiện AdBlock.",
   "permissions": [
     "declarativeNetRequest",
     "declarativeNetRequestFeedback",
